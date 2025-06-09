@@ -30,11 +30,13 @@ type Release struct {
 
 func getCapabilityVersions() (map[string]tailcfg.CapabilityVersion, error) {
 	// Fetch the releases
+	log.Trace().Msg("Fetching releases from GitHub...")
 	resp, err := http.Get(releasesURL)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching releases: %w", err)
 	}
 	defer resp.Body.Close()
+	log.Trace().Msg("Response status for github releases", resp.Status)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -60,12 +62,14 @@ func getCapabilityVersions() (map[string]tailcfg.CapabilityVersion, error) {
 
 		// Fetch the raw Go file
 		rawURL := fmt.Sprintf(rawFileURL, version)
+		log.Trace().Msgf("Fetching raw file for version %s from %s", version, rawURL)
 		resp, err := http.Get(rawURL)
 		if err != nil {
 			fmt.Printf("Error fetching raw file for version %s: %v\n", version, err)
 			continue
 		}
 		defer resp.Body.Close()
+		log.Trace().Msgf("Response status for raw file %s: %s", version, resp.Status)
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {

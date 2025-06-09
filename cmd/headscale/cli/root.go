@@ -77,6 +77,7 @@ func initConfig() {
 				Owner:      "juanfont",
 				Repository: "headscale",
 			}
+			log.Trace().Msgf("Checking for updates to %s", types.Version)
 			res, err := latest.Check(githubTag, types.Version)
 			if err == nil && res.Outdated {
 				//nolint
@@ -86,6 +87,7 @@ func initConfig() {
 					types.Version,
 				)
 			}
+			log.Trace().Msgf("Update check finished for %s", types.Version)
 		}
 	}
 }
