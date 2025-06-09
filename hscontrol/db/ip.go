@@ -130,8 +130,20 @@ func NewIPAllocator(
 }
 
 func (i *IPAllocator) Next() (*netip.Addr, *netip.Addr, error) {
+	log.Trace().
+		Str("prefix4", i.prefix4.String()).
+		Str("prefix6", i.prefix6.String()).
+		Str("strategy", i.strategy.String()).
+		Msg("allocating new IPs, locking")
+
 	i.mu.Lock()
 	defer i.mu.Unlock()
+
+	log.Trace().
+		Str("prefix4", i.prefix4.String()).
+		Str("prefix6", i.prefix6.String()).
+		Str("strategy", i.strategy.String()).
+		Msg("allocating new IPs, locked")
 
 	var err error
 	var ret4 *netip.Addr
@@ -145,6 +157,10 @@ func (i *IPAllocator) Next() (*netip.Addr, *netip.Addr, error) {
 		i.prev4 = *ret4
 	}
 
+	log.Trace().
+		Str("ip4", ret4.String()).
+		Msg("allocated new IPv4, fetching IPv6")
+	
 	if i.prefix6 != nil {
 		ret6, err = i.next(i.prev6, i.prefix6)
 		if err != nil {
@@ -152,6 +168,11 @@ func (i *IPAllocator) Next() (*netip.Addr, *netip.Addr, error) {
 		}
 		i.prev6 = *ret6
 	}
+
+	log.Trace().
+		Str("ip4", ret4.String()).
+		Str("ip6", ret6.String()).
+		Msg("allocated new IPs")
 
 	return ret4, ret6, nil
 }
