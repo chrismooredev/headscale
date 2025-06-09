@@ -214,19 +214,28 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 	log.Trace().Msg("used IP set fetched")
 
 	for {
+		log.Trace().Msgf("checking if IP %s is in use", ip.String(), prefix.String())
 		if !prefix.Contains(ip) {
 			return nil, ErrCouldNotAllocateIP
 		}
 
 		// Check if the IP has already been allocated
 		// or if it is a IP reserved by Tailscale.
-		if set.Contains(ip) || isTailscaleReservedIP(ip) {
+		log.Trace().Msgf("checking if IP %s is already used", ip.String())
+		// check for set contains and tailscale reserved as different lines, with a trace message between each
+		var set_contains := set.Contains(ip)
+		log.Trace().Msgf("checking if IP %s is reserved by Tailscale", ip.String())
+		var tailscale_reserved := isTailscaleReservedIP(ip)
+
+		log.Trace().Msgf("IP %s is already used or reserved by Tailscale: (%t || %t)", ip.String(), set_contains, tailscale_reserved)
+		if set_contains || tailscale_reserved {
 			switch i.strategy {
 			case types.IPAllocationStrategySequential:
 				log.Trace().Msgf("IP %s already used, getting next IP in prefix %s", ip.String(), prefix.String())
 				ip = ip.Next()
 				log.Trace().Msgf("next IP in prefix %s is %s", prefix.String(), ip.String())
 			case types.IPAllocationStrategyRandom:
+				log.Trace().Msgf("IP %s already used, getting random IP in prefix %s", ip.String(), prefix.String())
 				ip, err = randomNext(*prefix)
 				if err != nil {
 					return nil, fmt.Errorf("getting random IP: %w", err)
