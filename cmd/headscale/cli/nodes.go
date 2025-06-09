@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"log"
 	"net/netip"
 	"slices"
 	"strconv"
