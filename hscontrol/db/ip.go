@@ -133,7 +133,6 @@ func (i *IPAllocator) Next() (*netip.Addr, *netip.Addr, error) {
 	log.Trace().
 		Str("prefix4", i.prefix4.String()).
 		Str("prefix6", i.prefix6.String()).
-		Str("strategy", i.strategy.String()).
 		Msg("allocating new IPs, locking")
 
 	i.mu.Lock()
@@ -142,7 +141,6 @@ func (i *IPAllocator) Next() (*netip.Addr, *netip.Addr, error) {
 	log.Trace().
 		Str("prefix4", i.prefix4.String()).
 		Str("prefix6", i.prefix6.String()).
-		Str("strategy", i.strategy.String()).
 		Msg("allocating new IPs, locked")
 
 	var err error
