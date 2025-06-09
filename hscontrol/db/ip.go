@@ -211,7 +211,7 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 	if err != nil {
 		return nil, fmt.Errorf("getting used IP set: %w", err)
 	}
-	log.Trace().Msgf("used IP set fetched, size: %d", set.Len())
+	log.Trace().Msg("used IP set fetched")
 
 	for {
 		if !prefix.Contains(ip) {
