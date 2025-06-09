@@ -223,9 +223,9 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 		// or if it is a IP reserved by Tailscale.
 		log.Trace().Msgf("checking if IP %s is already used", ip.String())
 		// check for set contains and tailscale reserved as different lines, with a trace message between each
-		var set_contains := set.Contains(ip)
+		set_contains := set.Contains(ip)
 		log.Trace().Msgf("checking if IP %s is reserved by Tailscale", ip.String())
-		var tailscale_reserved := isTailscaleReservedIP(ip)
+		tailscale_reserved := isTailscaleReservedIP(ip)
 
 		log.Trace().Msgf("IP %s is already used or reserved by Tailscale: (%t || %t)", ip.String(), set_contains, tailscale_reserved)
 		if set_contains || tailscale_reserved {
