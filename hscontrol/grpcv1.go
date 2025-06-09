@@ -240,18 +240,36 @@ func (api headscaleV1APIServer) RegisterNode(
 
 	registrationId, err := types.RegistrationIDFromString(request.GetKey())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parsing registration ID: %w", err)
 	}
+
+	log.Trace().
+		Str("user", request.GetUser()).	
+		Str("registration_id", registrationId.String()).
+		Msg("allocating IPs for node registration")
 
 	ipv4, ipv6, err := api.h.ipAlloc.Next()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("allocating IPs: %w", err)
 	}
+
+	log.Trace().
+		Str("user", request.GetUser()).
+		Str("registration_id", registrationId.String()).
+		Str("ipv4", ipv4.String()).
+		Str("ipv6", ipv6.String()).
+		Msg("looking up user and creating node")
 
 	user, err := api.h.db.GetUserByName(request.GetUser())
 	if err != nil {
 		return nil, fmt.Errorf("looking up user: %w", err)
 	}
+
+	log.Trace().
+		Str("user", request.GetUser()).
+		Str("registration_id", registrationId.String()).
+		Str("ipv4", ipv4.String()).
+		Msg("creating node from auth path")
 
 	node, _, err := api.h.db.HandleNodeFromAuthPath(
 		registrationId,
@@ -263,6 +281,13 @@ func (api headscaleV1APIServer) RegisterNode(
 	if err != nil {
 		return nil, fmt.Errorf("initial node auth: %w", err)
 	}
+
+	log.Trace().
+		Str("user", request.GetUser()).
+		Str("registration_id", registrationId.String()).
+		Str("node", node.Hostname).
+		Msg("node created, updating node with registration info")
+
 
 	updateSent, err := nodesChangedHook(api.h.db, api.h.polMan, api.h.nodeNotifier)
 	if err != nil {
@@ -289,6 +314,12 @@ func (api headscaleV1APIServer) RegisterNode(
 		ctx = types.NotifyCtx(context.Background(), "web-node-login", node.Hostname)
 		api.h.nodeNotifier.NotifyAll(ctx, types.UpdatePeerChanged(node.ID))
 	}
+
+	log.Trace().
+		Str("user", request.GetUser()).
+		Str("registration_id", registrationId.String()).
+		Str("node", node.Hostname).
+		Msg("node registered successfully, sending response")
 
 	return &v1.RegisterNodeResponse{Node: node.Proto()}, nil
 }

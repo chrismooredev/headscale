@@ -456,6 +456,13 @@ func RegisterNode(tx *gorm.DB, node types.Node, ipv4 *netip.Addr, ipv6 *netip.Ad
 			Str("node_key", node.NodeKey.ShortString()).
 			Str("user", node.User.Username()).
 			Msg("refreshing existing users' node")
+	} else {
+		log.Trace().
+			Caller().
+			Str("node", node.Hostname).
+			Str("machine_key", node.MachineKey.ShortString()).
+			Str("node_key", node.NodeKey.ShortString()).
+			Msg("creating new node")
 	}
 
 	// If the node exists and it already has IP(s), we just save it
@@ -481,6 +488,14 @@ func RegisterNode(tx *gorm.DB, node types.Node, ipv4 *netip.Addr, ipv6 *netip.Ad
 	node.IPv6 = ipv6
 
 	if node.GivenName == "" {
+		log.Trace().
+			Caller().
+			Str("node", node.Hostname).
+			Str("machine_key", node.MachineKey.ShortString()).
+			Str("node_key", node.NodeKey.ShortString()).
+			Str("user", node.User.Username()).
+			Msg("Generating given name for node")
+
 		givenName, err := ensureUniqueGivenName(tx, node.Hostname)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ensure unique given name: %w", err)
@@ -488,6 +503,14 @@ func RegisterNode(tx *gorm.DB, node types.Node, ipv4 *netip.Addr, ipv6 *netip.Ad
 
 		node.GivenName = givenName
 	}
+
+	log.Trace().
+		Caller().
+		Str("node", node.Hostname).
+		Str("machine_key", node.MachineKey.ShortString()).
+		Str("node_key", node.NodeKey.ShortString()).
+		Str("user", node.User.Username()).
+		Msg("Saving node to the database")
 
 	if err := tx.Save(&node).Error; err != nil {
 		return nil, fmt.Errorf("failed register(save) node in the database: %w", err)
