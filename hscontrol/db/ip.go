@@ -141,6 +141,8 @@ func (i *IPAllocator) Next() (*netip.Addr, *netip.Addr, error) {
 	log.Trace().
 		Str("prefix4", i.prefix4.String()).
 		Str("prefix6", i.prefix6.String()).
+		Str("prev4", i.prev4.String()).
+		Str("prev6", i.prev6.String()).
 		Msg("allocating new IPs, locked")
 
 	var err error
@@ -188,10 +190,14 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 	var err error
 	var ip netip.Addr
 
+	log.Trace().Msgf("allocating next IP in prefix %s with strategy %s", prefix.String(), i.strategy)
+
 	switch i.strategy {
 	case types.IPAllocationStrategySequential:
 		// Get the first IP in our prefix
+		log.Trace().Msgf("allocating next IP sequentially, previous was %s", prev.String())
 		ip = prev.Next()
+		log.Trace().Msgf("next IP in prefix %s is %s", prefix.String(), ip.String())
 	case types.IPAllocationStrategyRandom:
 		ip, err = randomNext(*prefix)
 		if err != nil {
@@ -200,10 +206,12 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 	}
 
 	// TODO(kradalby): maybe this can be done less often.
+	log.Trace().Msgf("fetching used IP set")
 	set, err := i.usedIPs.IPSet()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting used IP set: %w", err)
 	}
+	log.Trace().Msgf("used IP set fetched, size: %d", set.Len())
 
 	for {
 		if !prefix.Contains(ip) {
@@ -215,7 +223,9 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 		if set.Contains(ip) || isTailscaleReservedIP(ip) {
 			switch i.strategy {
 			case types.IPAllocationStrategySequential:
+				log.Trace().Msgf("IP %s already used, getting next IP in prefix %s", ip.String(), prefix.String())
 				ip = ip.Next()
+				log.Trace().Msgf("next IP in prefix %s is %s", prefix.String(), ip.String())
 			case types.IPAllocationStrategyRandom:
 				ip, err = randomNext(*prefix)
 				if err != nil {
@@ -226,7 +236,9 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 			continue
 		}
 
+		log.Trace().Msgf("IP %s is available, adding to used IPs", ip.String())
 		i.usedIPs.Add(ip)
+		log.Trace().Msgf("IP %s added to used IPs, returning", ip.String())
 
 		return &ip, nil
 	}
