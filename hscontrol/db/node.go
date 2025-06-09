@@ -411,7 +411,7 @@ func (hsdb *HSDatabase) HandleNodeFromAuthPath(
 				// If the node is already registered, this is a refresh.
 				err := NodeSetExpiry(tx, node.ID, *nodeExpiry)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("(re)setting node expiry: %w", err)
 				}
 				return node, nil
 			}
@@ -448,6 +448,14 @@ func RegisterNode(tx *gorm.DB, node types.Node, ipv4 *netip.Addr, ipv6 *netip.Ad
 		node.GivenName = oldNode.GivenName
 		ipv4 = oldNode.IPv4
 		ipv6 = oldNode.IPv6
+
+		log.Trace().
+			Caller().
+			Str("node", node.Hostname).
+			Str("machine_key", node.MachineKey.ShortString()).
+			Str("node_key", node.NodeKey.ShortString()).
+			Str("user", node.User.Username()).
+			Msg("refreshing existing users' node")
 	}
 
 	// If the node exists and it already has IP(s), we just save it

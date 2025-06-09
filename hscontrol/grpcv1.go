@@ -261,7 +261,7 @@ func (api headscaleV1APIServer) RegisterNode(
 		ipv4, ipv6,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("initial node auth: %w", err)
 	}
 
 	updateSent, err := nodesChangedHook(api.h.db, api.h.polMan, api.h.nodeNotifier)
