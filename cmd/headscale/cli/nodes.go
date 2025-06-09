@@ -139,6 +139,8 @@ var registerNodeCmd = &cobra.Command{
 			User: user,
 		}
 
+		log.Trace().Msgf("Registering node (sending req) with key %s for user %s", registrationID, user)
+
 		response, err := client.RegisterNode(ctx, request)
 		if err != nil {
 			ErrorOutput(

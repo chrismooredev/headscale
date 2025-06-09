@@ -354,8 +354,11 @@ func (hsdb *HSDatabase) HandleNodeFromAuthPath(
 	ipv6 *netip.Addr,
 ) (*types.Node, bool, error) {
 	var newNode bool
+	log.Trace().Msg("Opening DB transaction to register node from auth callback")
 	node, err := Write(hsdb.DB, func(tx *gorm.DB) (*types.Node, error) {
+		log.Trace().Msg("DB transaction opened to register node from auth callback")
 		if reg, ok := hsdb.regCache.Get(registrationID); ok {
+			log.Trace().Msg("Found registration ID in cache, checking if node is already registered")
 			if node, _ := GetNodeByNodeKey(tx, reg.Node.NodeKey); node == nil {
 				user, err := GetUserByID(tx, userID)
 				if err != nil {
@@ -388,15 +391,21 @@ func (hsdb *HSDatabase) HandleNodeFromAuthPath(
 					reg.Node.Expiry = nodeExpiry
 				}
 
+				log.Trace().Msgf("Submitting node registration: %s with user %s", reg.Node.Hostname, user.Username())
+
 				node, err := RegisterNode(
 					tx,
 					reg.Node,
 					ipv4, ipv6,
 				)
 
+				log.Trace().Msgf("Node registration submitted: %s (%s)", reg.Node.Hostname, user.Username())
+
 				if err == nil {
 					hsdb.regCache.Delete(registrationID)
 				}
+
+				log.Trace().Msgf("Node %s (%s) registration ID deleted", reg.Node.Hostname, user.Username())
 
 				// Signal to waiting clients that the machine has been registered.
 				select {
@@ -405,9 +414,13 @@ func (hsdb *HSDatabase) HandleNodeFromAuthPath(
 				}
 				close(reg.Registered)
 
+				log.Trace().Msgf("Node %s (%s) registration signaled?", node.Hostname, user.Username())
+
 				newNode = true
 				return node, err
 			} else {
+				log.Trace().Msgf("Node %s (%s) already registered, updating expiry", node.Hostname)
+
 				// If the node is already registered, this is a refresh.
 				err := NodeSetExpiry(tx, node.ID, *nodeExpiry)
 				if err != nil {

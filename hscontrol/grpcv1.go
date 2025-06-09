@@ -236,7 +236,7 @@ func (api headscaleV1APIServer) RegisterNode(
 	log.Trace().
 		Str("user", request.GetUser()).
 		Str("registration_id", request.GetKey()).
-		Msg("Registering node")
+		Msg("Registering node (hsc/grpcv1)")
 
 	registrationId, err := types.RegistrationIDFromString(request.GetKey())
 	if err != nil {
