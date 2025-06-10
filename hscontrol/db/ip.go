@@ -213,8 +213,17 @@ func (i *IPAllocator) next(prev netip.Addr, prefix *netip.Prefix) (*netip.Addr, 
 	}
 	log.Trace().Msg("used IP set fetched")
 
+	// TODO(chrismooredev): next IP fetching can be done with less risk of infinite loop:
+	// common - get ranges in IPSet, calc/count leftover IPs in prefix
+	//   if 0, return error
+	// sequential - get the (first empty/last+1) address
+	//   if all IPs in prefix are used, returns error
+	// random - gen random number in range, use it as an index into available ranges
+	//   if all IPs in prefix are used, currently goes into busy loop (also if unlucky)
+	// improve error message: "no more IPs are available" vs something else
+
 	for {
-		log.Trace().Msgf("checking if IP %s is in use", ip.String(), prefix.String())
+		log.Trace().Msgf("checking if IP %s is in prefix %s", ip.String(), prefix.String())
 		if !prefix.Contains(ip) {
 			return nil, ErrCouldNotAllocateIP
 		}
